@@ -1,0 +1,344 @@
+{
+  "version": 1,
+  "scales": [
+    {
+      "key": "voltage",
+      "name": "Voltage",
+      "unit": "V",
+      "ratio": 1
+    },
+    {
+      "key": "current",
+      "name": "Current",
+      "unit": "A",
+      "ratio": 100000000
+    },
+    {
+      "key": "impedance",
+      "name": "Impedance",
+      "unit": "Ω",
+      "ratio": 2
+    },
+    {
+      "key": "power",
+      "name": "Power",
+      "unit": "VA",
+      "ratio": 0.5
+    }
+  ],
+  "manualPhasors": [
+    {
+      "label": "Vs",
+      "mag": 600,
+      "angle": 0,
+      "color": "#111827",
+      "visible": true,
+      "labelX": 16,
+      "labelY": -12,
+      "scaleKey": "voltage",
+      "expanded": true
+    },
+    {
+      "label": "V1",
+      "mag": 176.73,
+      "angle": -44.03,
+      "color": "#dc2626",
+      "visible": true,
+      "labelX": 16,
+      "labelY": -12,
+      "scaleKey": "voltage",
+      "expanded": true
+    }
+  ],
+  "circuit": {
+    "sourceMag": 120,
+    "sourceAngle": 0,
+    "branches": [
+      {
+        "name": "Branch 1",
+        "impedances": [
+          {
+            "label": "Fixed 1K",
+            "r": 1000,
+            "x": 0,
+            "id": "a9798ee4-efcf-49ca-92f7-8c7f0e23d9f7"
+          },
+          {
+            "label": "Pot",
+            "r": 248900,
+            "x": 0,
+            "id": "3a7050e9-cb33-4302-b330-d99d3224e9dc"
+          },
+          {
+            "label": "Capacitor",
+            "r": 0,
+            "x": -28000
+          }
+        ],
+        "id": "647f4449-eb05-475b-862e-15fcbd16fc22"
+      }
+    ]
+  },
+  "mode": "circuit",
+  "diagramSettings": {
+    "showGrid": true,
+    "showDiagramLabels": true,
+    "notesView": false,
+    "colorPickerMode": "palette",
+    "lineThickness": 3.5,
+    "arrowSize": 8,
+    "phasorUnitsPerDivision": "",
+    "visibleScaleKeys": [
+      "voltage",
+      "current"
+    ],
+    "showTipToTail": false,
+    "tipToTailImpedance": false,
+    "tipToTailPower": true
+  },
+  "timeSettings": {
+    "showTimePlot": true,
+    "frequency": 60,
+    "cycles": "3",
+    "valueUnitsPerDivision": "76.88",
+    "hiddenWaveLabels": [
+      "Z_Z2",
+      "Z_B2",
+      "Z_Z1",
+      "Z_B1",
+      "I_B1"
+    ],
+    "cursorMode": "max",
+    "referenceLabel": "Vs",
+    "cursorCycleOffset": 1
+  },
+  "circuitPrefs": {
+    "Vs": {
+      "expanded": false,
+      "visible": true,
+      "color": "#111827"
+    },
+    "It": {
+      "expanded": false,
+      "visible": false,
+      "color": "#dc2626"
+    },
+    "V_R2": {
+      "visible": false,
+      "expanded": false
+    },
+    "V_R1": {
+      "visible": true,
+      "expanded": false
+    },
+    "I_B1": {
+      "visible": false,
+      "expanded": false,
+      "color": "#2563eb"
+    },
+    "V_C1": {
+      "visible": true,
+      "expanded": false
+    },
+    "V_Z1": {
+      "expanded": false,
+      "color": "#16a34a",
+      "visible": false
+    },
+    "I_B2": {
+      "expanded": false,
+      "visible": true,
+      "color": "#7c3aed"
+    },
+    "V_Z2": {
+      "expanded": false,
+      "color": "#ea580c",
+      "visible": false
+    },
+    "Z_B1": {
+      "visible": false,
+      "expanded": false
+    },
+    "Z_Z1": {
+      "visible": false,
+      "expanded": false,
+      "color": "#2563eb"
+    },
+    "Zt": {
+      "expanded": false,
+      "visible": false
+    },
+    "S_T": {
+      "expanded": false,
+      "visible": true
+    },
+    "P_T": {
+      "expanded": false
+    },
+    "Q_T": {
+      "expanded": false
+    },
+    "S_B1": {
+      "expanded": false,
+      "visible": false
+    },
+    "P_B1": {
+      "expanded": false,
+      "visible": false
+    },
+    "Q_B1": {
+      "expanded": false,
+      "visible": false
+    },
+    "S_Z1": {
+      "expanded": false,
+      "visible": false
+    },
+    "P_Z1": {
+      "expanded": false,
+      "visible": false
+    },
+    "Q_Z1": {
+      "expanded": false,
+      "visible": false
+    },
+    "Z_Z2": {
+      "expanded": false,
+      "visible": false
+    },
+    "S_Z2": {
+      "expanded": false,
+      "visible": false
+    },
+    "P_Z2": {
+      "expanded": false,
+      "visible": false
+    },
+    "Q_Z2": {
+      "expanded": false,
+      "visible": false
+    },
+    "Z_Z3": {
+      "visible": false
+    },
+    "S_Z3": {
+      "visible": false
+    },
+    "P_Z3": {
+      "visible": false
+    },
+    "Q_Z3": {
+      "visible": false
+    },
+    "V_Fixed 1K": {
+      "visible": false
+    },
+    "V_Pot": {
+      "visible": false
+    }
+  },
+  "automations": [
+    {
+      "id": "3080e9cf-fd1f-4ed0-aa77-5f9d63018f0d",
+      "targetKey": "0:1:r",
+      "min": "0",
+      "max": "250000",
+      "speed": 5,
+      "stepSize": "100",
+      "elapsed": 4.9799999999999605,
+      "mode": "bounce",
+      "value": 248900,
+      "direction": 1,
+      "running": false
+    }
+  ],
+  "dashboardLayout": [
+    {
+      "i": "phasor-view",
+      "x": 0,
+      "y": 6,
+      "w": 7,
+      "h": 10,
+      "minW": 4,
+      "minH": 5,
+      "visible": true,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "time-plot",
+      "x": 7,
+      "y": 6,
+      "w": 8,
+      "h": 6,
+      "minW": 4,
+      "minH": 3,
+      "visible": true,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "measurements",
+      "x": 7,
+      "y": 12,
+      "w": 8,
+      "h": 4,
+      "minW": 4,
+      "minH": 2,
+      "visible": true,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "circuit-preview",
+      "x": 0,
+      "y": 0,
+      "w": 15,
+      "h": 6,
+      "minW": 4,
+      "minH": 3,
+      "visible": true,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "circuit-builder",
+      "x": 15,
+      "y": 0,
+      "w": 4,
+      "h": 10,
+      "minW": 3,
+      "minH": 4,
+      "visible": true,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "phasors",
+      "x": 15,
+      "y": 10,
+      "w": 4,
+      "h": 11,
+      "minW": 3,
+      "minH": 4,
+      "visible": true,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "automations",
+      "x": 7,
+      "y": 7,
+      "w": 8,
+      "h": 4,
+      "minW": 5,
+      "minH": 3,
+      "visible": false,
+      "moved": false,
+      "static": false
+    }
+  ],
+  "dashboardSettings": {
+    "compactType": "vertical"
+  }
+}

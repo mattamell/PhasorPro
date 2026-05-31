@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import ScaleEditor from "./ScaleEditor.jsx";
 import AutomationPanel from "./AutomationPanel.jsx";
 
@@ -8,8 +9,13 @@ export default function TopMenu({
   colorPalette,
   automations,
   automationTargets,
+  viewItems = [],
+  dashboardSettings,
   projectStatus,
   onModeChange,
+  onViewItemChange,
+  onResetDashboardLayout,
+  onDashboardSettingsChange,
   onDiagramSettingsChange,
   onCircuitScaleFamilyToggle,
   onAutoAssignColors,
@@ -26,10 +32,38 @@ export default function TopMenu({
   onExportSvg,
   onExportPng,
 }) {
+  const [openMenu, setOpenMenu] = useState("");
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    function handlePointerDown(event) {
+      if (!menuRef.current || menuRef.current.contains(event.target)) return;
+      setOpenMenu("");
+    }
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape") setOpenMenu("");
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
+  function toggleMenu(menuKey) {
+    setOpenMenu((current) => (current === menuKey ? "" : menuKey));
+  }
+
   return (
-    <div className="top-menu">
-      <details className="top-dropdown">
-        <summary>Mode</summary>
+    <div className="top-menu" ref={menuRef}>
+      <div className={`top-dropdown ${openMenu === "mode" ? "open" : ""}`}>
+        <button type="button" className="top-menu-trigger" onClick={() => toggleMenu("mode")}>
+          Mode
+        </button>
+        {openMenu === "mode" && (
         <div className="dropdown-panel narrow">
           <div className="mode-menu">
             <p className="scale-title">Phasor Source</p>
@@ -51,10 +85,61 @@ export default function TopMenu({
             </div>
           </div>
         </div>
-      </details>
+        )}
+      </div>
 
-      <details className="top-dropdown">
-        <summary>Diagram</summary>
+      <div className={`top-dropdown ${openMenu === "view" ? "open" : ""}`}>
+        <button type="button" className="top-menu-trigger" onClick={() => toggleMenu("view")}>
+          View
+        </button>
+        {openMenu === "view" && (
+        <div className="dropdown-panel narrow">
+          <div className="view-menu">
+            <p className="scale-title">Layout</p>
+            <label>
+              Compaction
+              <select
+                value={dashboardSettings.compactType}
+                onChange={(e) => onDashboardSettingsChange({ compactType: e.target.value })}
+              >
+                <option value="vertical">Vertical</option>
+                <option value="horizontal">Horizontal</option>
+                <option value="none">None</option>
+              </select>
+            </label>
+            <button type="button" className="collapse-button full-width-button" onClick={onResetDashboardLayout}>
+              Reset window layout
+            </button>
+
+            <div className="diagram-section">
+            <p className="scale-title">Windows</p>
+            <div className="diagram-toggle-grid">
+              {viewItems.map((item) => (
+                <label className={`row-between view-window-row ${item.disabled ? "disabled" : ""}`} key={item.id}>
+                  <span>
+                    <input
+                      type="checkbox"
+                      checked={item.visible}
+                      disabled={item.disabled}
+                      onChange={(e) => onViewItemChange(item.id, e.target.checked)}
+                    />
+                    {item.title}
+                  </span>
+                  {item.note && <span className="small-value inline-note">{item.note}</span>}
+                </label>
+              ))}
+            </div>
+            </div>
+          </div>
+        </div>
+        )}
+      </div>
+
+      <div className={`top-dropdown ${openMenu === "diagram" ? "open" : ""}`}>
+        <button type="button" className="top-menu-trigger" onClick={() => toggleMenu("diagram")}>
+          Diagram
+        </button>
+        {openMenu === "diagram" && (
         <div className="dropdown-panel">
           <div className="diagram-menu">
             <p className="scale-title">Diagram Controls</p>
@@ -205,17 +290,25 @@ export default function TopMenu({
             </div>
           </div>
         </div>
-      </details>
+        )}
+      </div>
 
-      <details className="top-dropdown">
-        <summary>Scales</summary>
+      <div className={`top-dropdown ${openMenu === "scales" ? "open" : ""}`}>
+        <button type="button" className="top-menu-trigger" onClick={() => toggleMenu("scales")}>
+          Scales
+        </button>
+        {openMenu === "scales" && (
         <div className="dropdown-panel">
           <ScaleEditor scales={scales} onScaleChange={onScaleChange} compact />
         </div>
-      </details>
+        )}
+      </div>
 
-      <details className="top-dropdown">
-        <summary>Automate</summary>
+      <div className={`top-dropdown ${openMenu === "automate" ? "open" : ""}`}>
+        <button type="button" className="top-menu-trigger" onClick={() => toggleMenu("automate")}>
+          Automate
+        </button>
+        {openMenu === "automate" && (
         <div className="dropdown-panel wide">
           <AutomationPanel
             automations={automations}
@@ -227,10 +320,14 @@ export default function TopMenu({
             onRemoveAutomation={onRemoveAutomation}
           />
         </div>
-      </details>
+        )}
+      </div>
 
-      <details className="top-dropdown">
-        <summary>Project</summary>
+      <div className={`top-dropdown ${openMenu === "project" ? "open" : ""}`}>
+        <button type="button" className="top-menu-trigger" onClick={() => toggleMenu("project")}>
+          Project
+        </button>
+        {openMenu === "project" && (
         <div className="dropdown-panel">
           <div className="project-menu">
             <div className="button-grid">
@@ -257,7 +354,8 @@ export default function TopMenu({
             <div className="project-status">{projectStatus}</div>
           </div>
         </div>
-      </details>
+        )}
+      </div>
     </div>
   );
 }

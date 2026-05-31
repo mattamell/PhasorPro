@@ -1,13 +1,28 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import ReactGridLayout, { WidthProvider } from "react-grid-layout/legacy";
+import "react-grid-layout/css/styles.css";
+import "react-resizable/css/styles.css";
 import PhasorDiagram from "./components/PhasorDiagram.jsx";
 import TimePlot from "./components/TimePlot.jsx";
 import PhasorPanel from "./components/PhasorPanel.jsx";
 import TopMenu from "./components/TopMenu.jsx";
 import CircuitPreview from "./components/CircuitPreview.jsx";
+import CircuitBuilder from "./components/CircuitBuilder.jsx";
+import DashboardPanel from "./components/DashboardPanel.jsx";
+import AutomationPanel from "./components/AutomationPanel.jsx";
 import { solveCircuit } from "./utils/circuitSolver.js";
 import { getScaledMag, inferScaleKey, makePhasor } from "./utils/phasorMath.js";
+import defaultLayoutProject from "../Default Layout.json";
 
 const STORAGE_KEY = "phasor-pro-project-v1";
+const GridLayout = WidthProvider(ReactGridLayout);
+const DASHBOARD_MIN_COLS = 12;
+const DASHBOARD_COLUMN_WIDTH = 112;
+const DASHBOARD_ROW_HEIGHT = 74;
+const DASHBOARD_MARGIN = [16, 16];
+const DASHBOARD_PADDING = [8, 8];
+const DASHBOARD_MIN_ROWS = 10;
+const CIRCUIT_DASHBOARD_PANEL_IDS = ["circuit-preview", "circuit-builder", "automations"];
 
 const colorOptions = [
   "#111827",
@@ -87,6 +102,52 @@ const defaultTimeSettings = {
   cursorCycleOffset: 0,
 };
 
+const defaultDashboardSettings = {
+  compactType: "vertical",
+};
+
+const defaultDashboardLayout = [
+  { i: "phasor-view", x: 0, y: 0, w: 6, h: 7, minW: 4, minH: 5, visible: true },
+  { i: "time-plot", x: 0, y: 7, w: 6, h: 4, minW: 4, minH: 3, visible: true },
+  { i: "measurements", x: 0, y: 11, w: 6, h: 3, minW: 4, minH: 2, visible: true },
+  { i: "circuit-preview", x: 6, y: 0, w: 6, h: 4, minW: 4, minH: 3, visible: true },
+  { i: "circuit-builder", x: 6, y: 4, w: 3, h: 7, minW: 3, minH: 4, visible: true },
+  { i: "phasors", x: 9, y: 4, w: 3, h: 7, minW: 3, minH: 4, visible: true },
+  { i: "automations", x: 6, y: 11, w: 6, h: 4, minW: 5, minH: 3, visible: true },
+];
+
+const dashboardPanelTitles = {
+  "phasor-view": "Phasor View",
+  "time-plot": "Time Plot",
+  measurements: "Measurement Table",
+  "circuit-preview": "Circuit Preview",
+  "circuit-builder": "Circuit Builder",
+  phasors: "Phasors",
+  automations: "Automations",
+};
+
+function getDashboardColumnCount(width) {
+  if (!Number.isFinite(width) || width <= 0) return DASHBOARD_MIN_COLS;
+  const usableWidth = Math.max(0, width - DASHBOARD_PADDING[0] * 2);
+  const columnTrack = DASHBOARD_COLUMN_WIDTH + DASHBOARD_MARGIN[0];
+  return Math.max(DASHBOARD_MIN_COLS, Math.floor((usableWidth + DASHBOARD_MARGIN[0]) / columnTrack));
+}
+
+function getDashboardHeight(rows) {
+  return (
+    DASHBOARD_PADDING[1] * 2 +
+    rows * DASHBOARD_ROW_HEIGHT +
+    Math.max(0, rows - 1) * DASHBOARD_MARGIN[1]
+  );
+}
+
+function getDashboardRowCount(height) {
+  if (!Number.isFinite(height) || height <= 0) return DASHBOARD_MIN_ROWS;
+  const usableHeight = Math.max(0, height - DASHBOARD_PADDING[1] * 2);
+  const rowTrack = DASHBOARD_ROW_HEIGHT + DASHBOARD_MARGIN[1];
+  return Math.max(DASHBOARD_MIN_ROWS, Math.floor((usableHeight + DASHBOARD_MARGIN[1]) / rowTrack));
+}
+
 function normalizeAutomations(automations) {
   if (!Array.isArray(automations)) return [];
   return automations.map((automation) => ({
@@ -126,6 +187,29 @@ function normalizeDiagramSettings(settings) {
   return merged;
 }
 
+function normalizeDashboardLayout(layout) {
+  const byId = new Map(Array.isArray(layout) ? layout.map((item) => [item.i, item]) : []);
+
+  return defaultDashboardLayout.map((item) => {
+    const saved = byId.get(item.i);
+    if (!saved) return { ...item };
+
+    const x = Number(saved.x);
+    const y = Number(saved.y);
+    const w = Number(saved.w);
+    const h = Number(saved.h);
+
+    return {
+      ...item,
+      x: Number.isFinite(x) ? Math.max(0, x) : item.x,
+      y: Number.isFinite(y) ? Math.max(0, y) : item.y,
+      w: Number.isFinite(w) ? Math.max(item.minW, w) : item.w,
+      h: Number.isFinite(h) ? Math.max(item.minH, h) : item.h,
+      visible: saved.visible !== false,
+    };
+  });
+}
+
 function normalizeProject(project) {
   return {
     scales: normalizeScales(project?.scales),
@@ -136,6 +220,11 @@ function normalizeProject(project) {
     timeSettings: { ...defaultTimeSettings, ...(project?.timeSettings || {}) },
     circuitPrefs: project?.circuitPrefs || {},
     automations: normalizeAutomations(project?.automations),
+    dashboardLayout: normalizeDashboardLayout(project?.dashboardLayout),
+    dashboardSettings: {
+      ...defaultDashboardSettings,
+      ...(project?.dashboardSettings || {}),
+    },
   };
 }
 
@@ -343,7 +432,13 @@ export default function App() {
   const [timeSettings, setTimeSettings] = useState(initialProject.timeSettings);
   const [circuitPrefs, setCircuitPrefs] = useState(initialProject.circuitPrefs);
   const [automations, setAutomations] = useState(initialProject.automations);
+  const [dashboardLayout, setDashboardLayout] = useState(initialProject.dashboardLayout);
+  const [dashboardSettings, setDashboardSettings] = useState(initialProject.dashboardSettings);
+  const [dashboardCols, setDashboardCols] = useState(DASHBOARD_MIN_COLS);
+  const [dashboardMinHeight, setDashboardMinHeight] = useState(getDashboardHeight(DASHBOARD_MIN_ROWS));
+  const [selectedWaveLabel, setSelectedWaveLabel] = useState("");
   const [projectStatus, setProjectStatus] = useState("Autosave ready.");
+  const dashboardWrapRef = useRef(null);
   const phasorSvgRef = useRef(null);
   const automationsRef = useRef(automations);
 
@@ -440,8 +535,21 @@ export default function App() {
       timeSettings,
       circuitPrefs,
       automations,
+      dashboardLayout,
+      dashboardSettings,
     }),
-    [scales, manualPhasors, circuit, mode, diagramSettings, timeSettings, circuitPrefs, automations],
+    [
+      scales,
+      manualPhasors,
+      circuit,
+      mode,
+      diagramSettings,
+      timeSettings,
+      circuitPrefs,
+      automations,
+      dashboardLayout,
+      dashboardSettings,
+    ],
   );
 
   useEffect(() => {
@@ -458,6 +566,37 @@ export default function App() {
   useEffect(() => {
     automationsRef.current = automations;
   }, [automations]);
+
+  useEffect(() => {
+    const element = dashboardWrapRef.current;
+    if (!element) return undefined;
+
+    function updateColumnCount(width) {
+      setDashboardCols(getDashboardColumnCount(width));
+    }
+
+    function updateMinHeight() {
+      const rect = element.getBoundingClientRect();
+      const availableHeight = window.innerHeight - rect.top - 12;
+      setDashboardMinHeight(getDashboardHeight(getDashboardRowCount(availableHeight)));
+    }
+
+    updateColumnCount(element.clientWidth);
+    updateMinHeight();
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+      updateColumnCount(entry.contentRect.width);
+      updateMinHeight();
+    });
+    observer.observe(element);
+    window.addEventListener("resize", updateMinHeight);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updateMinHeight);
+    };
+  }, []);
 
   useEffect(() => {
     let frameId;
@@ -880,6 +1019,8 @@ export default function App() {
     setTimeSettings(next.timeSettings);
     setCircuitPrefs(next.circuitPrefs);
     setAutomations(next.automations);
+    setDashboardLayout(next.dashboardLayout);
+    setDashboardSettings(next.dashboardSettings);
     setProjectStatus("Loaded from this browser.");
   }
 
@@ -905,6 +1046,8 @@ export default function App() {
         setTimeSettings(next.timeSettings);
         setCircuitPrefs(next.circuitPrefs);
         setAutomations(next.automations);
+        setDashboardLayout(next.dashboardLayout);
+        setDashboardSettings(next.dashboardSettings);
         setProjectStatus("Imported project JSON.");
       } catch {
         setProjectStatus("Import failed: invalid JSON.");
@@ -964,6 +1107,203 @@ export default function App() {
     image.src = svgUrl;
   }
 
+  function handleDashboardLayoutChange(nextLayout) {
+    setDashboardLayout((current) => {
+      const byId = new Map(nextLayout.map((item) => [item.i, item]));
+      return current.map((item) => ({
+        ...item,
+        ...(byId.get(item.i) || {}),
+        minW: item.minW,
+        minH: item.minH,
+      }));
+    });
+  }
+
+  function setDashboardPanelVisible(panelId, visible) {
+    setDashboardLayout((current) =>
+      current.map((item) => (item.i === panelId ? { ...item, visible } : item)),
+    );
+  }
+
+  function resetDashboardLayout() {
+    setDashboardLayout(normalizeDashboardLayout(defaultLayoutProject.dashboardLayout));
+    setDashboardSettings({
+      ...defaultDashboardSettings,
+      ...(defaultLayoutProject.dashboardSettings || {}),
+    });
+    setProjectStatus("Reset dashboard layout.");
+  }
+
+  const visibleDashboardLayout = dashboardLayout.filter(
+    (item) =>
+      item.visible !== false && (mode === "circuit" || !CIRCUIT_DASHBOARD_PANEL_IDS.includes(item.i)),
+  );
+
+  const dashboardViewItems = dashboardLayout.map((item) => {
+    const circuitOnly = CIRCUIT_DASHBOARD_PANEL_IDS.includes(item.i);
+    return {
+      id: item.i,
+      title: dashboardPanelTitles[item.i] || item.i,
+      visible: item.visible !== false,
+      disabled: mode !== "circuit" && circuitOnly,
+      note: mode !== "circuit" && circuitOnly ? "Circuit mode only" : "",
+    };
+  });
+
+  function renderDashboardPanel(panelId) {
+    if (panelId === "phasor-view") {
+      return (
+        <div className="phasor-view-surface">
+          <PhasorDiagram
+            svgRef={phasorSvgRef}
+            phasors={activePhasors}
+            scales={scales}
+            showGrid={diagramSettings.showGrid}
+            showDiagramLabels={diagramSettings.showDiagramLabels}
+            lineThickness={diagramSettings.lineThickness}
+            arrowSize={diagramSettings.arrowSize}
+            unitsPerDivision={diagramSettings.phasorUnitsPerDivision}
+            autoMaxMag={automationAutoMaxMag}
+            tipToTailGroups={tipToTailGroups}
+          />
+        </div>
+      );
+    }
+
+    if (panelId === "time-plot") {
+      return (
+        <TimePlot
+          phasors={activePhasors}
+          scales={scales}
+          settings={timeSettings}
+          colorPickerMode={diagramSettings.colorPickerMode}
+          colorPalette={contrastPalette}
+          selectedWaveLabel={selectedWaveLabel}
+          onSelectedWaveLabelChange={setSelectedWaveLabel}
+          onSettingsChange={updateTimeSettings}
+          onPhasorColorChange={updatePhasorColorByLabel}
+          onPrevCursorCycle={() =>
+            setTimeSettings((current) => ({
+              ...current,
+              cursorCycleOffset: Math.max(0, current.cursorCycleOffset - 1),
+            }))
+          }
+          onNextCursorCycle={(maxCursorCycle) =>
+            setTimeSettings((current) => ({
+              ...current,
+              cursorCycleOffset: Math.min(maxCursorCycle, current.cursorCycleOffset + 1),
+            }))
+          }
+          showMeasurements={false}
+        />
+      );
+    }
+
+    if (panelId === "measurements") {
+      return (
+        <TimePlot
+          phasors={activePhasors}
+          scales={scales}
+          settings={timeSettings}
+          colorPickerMode={diagramSettings.colorPickerMode}
+          colorPalette={contrastPalette}
+          selectedWaveLabel={selectedWaveLabel}
+          onSelectedWaveLabelChange={setSelectedWaveLabel}
+          onSettingsChange={updateTimeSettings}
+          onPhasorColorChange={updatePhasorColorByLabel}
+          onPrevCursorCycle={() => {}}
+          onNextCursorCycle={() => {}}
+          showHeader={false}
+          showPlot={false}
+        />
+      );
+    }
+
+    if (panelId === "circuit-preview") {
+      return (
+        <div className="circuit-preview-frame">
+          <CircuitPreview circuit={circuit} />
+        </div>
+      );
+    }
+
+    if (panelId === "circuit-builder") {
+      return (
+        <CircuitBuilder
+          circuit={circuit}
+          solvedCircuit={solvedCircuit}
+          onSourceChange={updateCircuitSource}
+          onAddBranch={addBranch}
+          onRemoveBranch={removeBranch}
+          onAddImpedance={addImpedance}
+          onRemoveImpedance={removeImpedance}
+          onImpedanceChange={updateImpedance}
+        />
+      );
+    }
+
+    if (panelId === "automations") {
+      return (
+        <AutomationPanel
+          automations={automations}
+          targetOptions={automationTargets}
+          onAddAutomation={addAutomation}
+          onUpdateAutomation={updateAutomation}
+          onPlayAutomation={playAutomation}
+          onStopAutomation={stopAutomation}
+          onRemoveAutomation={removeAutomation}
+        />
+      );
+    }
+
+    if (panelId === "phasors") {
+      return (
+        <PhasorPanel
+          phasors={activePhasors}
+          scales={scales}
+          mode={mode}
+          solvedCircuit={solvedCircuit}
+          circuit={circuit}
+          colorPickerMode={diagramSettings.colorPickerMode}
+          colorPalette={contrastPalette}
+          onCircuitSourceChange={updateCircuitSource}
+          onAddBranch={addBranch}
+          onRemoveBranch={removeBranch}
+          onAddImpedance={addImpedance}
+          onRemoveImpedance={removeImpedance}
+          onImpedanceChange={updateImpedance}
+          onPhasorChange={updatePhasor}
+          onTogglePhasor={togglePhasor}
+          onToggleExpanded={toggleExpanded}
+          onExpandAll={expandAllPhasors}
+          onCollapseAll={collapseAllPhasors}
+          onAddPhasor={addPhasor}
+          onRemovePhasor={removePhasor}
+          showCircuitBuilder={false}
+          embedded
+        />
+      );
+    }
+
+    return null;
+  }
+
+  function getDashboardPanelTitle(panelId) {
+    return dashboardPanelTitles[panelId] || panelId;
+  }
+
+  const dashboardGridStyle = {
+    minHeight: dashboardMinHeight,
+    "--dashboard-cell-x": `calc((100% - ${DASHBOARD_PADDING[0] * 2}px - ${
+      DASHBOARD_MARGIN[0] * Math.max(0, dashboardCols - 1)
+    }px) / ${dashboardCols})`,
+    "--dashboard-cell-y": `${DASHBOARD_ROW_HEIGHT}px`,
+    "--dashboard-gap-x": `${DASHBOARD_MARGIN[0]}px`,
+    "--dashboard-gap-y": `${DASHBOARD_MARGIN[1]}px`,
+    "--dashboard-padding-x": `${DASHBOARD_PADDING[0]}px`,
+    "--dashboard-padding-y": `${DASHBOARD_PADDING[1]}px`,
+  };
+
   return (
     <div className="page">
       <div className="container">
@@ -979,8 +1319,15 @@ export default function App() {
             colorPalette={contrastPalette}
             automations={automations}
             automationTargets={automationTargets}
+            viewItems={dashboardViewItems}
+            dashboardSettings={dashboardSettings}
             projectStatus={projectStatus}
             onModeChange={setMode}
+            onViewItemChange={setDashboardPanelVisible}
+            onResetDashboardLayout={resetDashboardLayout}
+            onDashboardSettingsChange={(patch) =>
+              setDashboardSettings((current) => ({ ...current, ...patch }))
+            }
             onDiagramSettingsChange={updateDiagramSettings}
             onCircuitScaleFamilyToggle={toggleCircuitScaleFamily}
             onAutoAssignColors={autoAssignColors}
@@ -999,84 +1346,30 @@ export default function App() {
           />
         </header>
 
-        {mode === "circuit" && (
-          <div className="card circuit-preview-card resizable-panel">
-            <div className="plot-title-row">
-              <span>Circuit Preview</span>
-            </div>
-            <div className="circuit-preview-frame">
-              <CircuitPreview circuit={circuit} />
-            </div>
-          </div>
-        )}
-
-        <div className="layout">
-          <div className="card plot-card resizable-panel">
-            <div className="plot-stack">
-              <div>
-                <div className="plot-title-row">
-                  <span>Phasor View</span>
-                </div>
-                <PhasorDiagram
-                  svgRef={phasorSvgRef}
-                  phasors={activePhasors}
-                  scales={scales}
-                  showGrid={diagramSettings.showGrid}
-                  showDiagramLabels={diagramSettings.showDiagramLabels}
-                  lineThickness={diagramSettings.lineThickness}
-                  arrowSize={diagramSettings.arrowSize}
-                  unitsPerDivision={diagramSettings.phasorUnitsPerDivision}
-                  autoMaxMag={automationAutoMaxMag}
-                  tipToTailGroups={tipToTailGroups}
-                />
+        <div className="dashboard-wrap" ref={dashboardWrapRef} style={dashboardGridStyle}>
+          <GridLayout
+            className="dashboard-grid"
+            layout={visibleDashboardLayout}
+            cols={dashboardCols}
+            rowHeight={DASHBOARD_ROW_HEIGHT}
+            margin={DASHBOARD_MARGIN}
+            containerPadding={DASHBOARD_PADDING}
+            compactType={dashboardSettings.compactType === "none" ? null : dashboardSettings.compactType}
+            preventCollision={false}
+            draggableHandle=".dashboard-drag-handle"
+            onLayoutChange={handleDashboardLayoutChange}
+          >
+            {visibleDashboardLayout.map((item) => (
+              <div key={item.i}>
+                <DashboardPanel
+                  title={getDashboardPanelTitle(item.i)}
+                  onClose={() => setDashboardPanelVisible(item.i, false)}
+                >
+                  {renderDashboardPanel(item.i)}
+                </DashboardPanel>
               </div>
-
-              <TimePlot
-                phasors={activePhasors}
-                scales={scales}
-                settings={timeSettings}
-                colorPickerMode={diagramSettings.colorPickerMode}
-                colorPalette={contrastPalette}
-                onSettingsChange={updateTimeSettings}
-                onPhasorColorChange={updatePhasorColorByLabel}
-                onPrevCursorCycle={() =>
-                  setTimeSettings((current) => ({
-                    ...current,
-                    cursorCycleOffset: Math.max(0, current.cursorCycleOffset - 1),
-                  }))
-                }
-                onNextCursorCycle={(maxCursorCycle) =>
-                  setTimeSettings((current) => ({
-                    ...current,
-                    cursorCycleOffset: Math.min(maxCursorCycle, current.cursorCycleOffset + 1),
-                  }))
-                }
-              />
-            </div>
-          </div>
-
-          <PhasorPanel
-            phasors={activePhasors}
-            scales={scales}
-            mode={mode}
-            solvedCircuit={solvedCircuit}
-            circuit={circuit}
-            colorPickerMode={diagramSettings.colorPickerMode}
-            colorPalette={contrastPalette}
-            onCircuitSourceChange={updateCircuitSource}
-            onAddBranch={addBranch}
-            onRemoveBranch={removeBranch}
-            onAddImpedance={addImpedance}
-            onRemoveImpedance={removeImpedance}
-            onImpedanceChange={updateImpedance}
-            onPhasorChange={updatePhasor}
-            onTogglePhasor={togglePhasor}
-            onToggleExpanded={toggleExpanded}
-            onExpandAll={expandAllPhasors}
-            onCollapseAll={collapseAllPhasors}
-            onAddPhasor={addPhasor}
-            onRemovePhasor={removePhasor}
-          />
+            ))}
+          </GridLayout>
         </div>
       </div>
     </div>

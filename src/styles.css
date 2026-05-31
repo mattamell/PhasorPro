@@ -5,21 +5,23 @@
 body {
   margin: 0;
   font-family: Arial, Helvetica, sans-serif;
-  background: #f1f5f9;
-  color: #0f172a;
+  background: #eef2f7;
+  color: #1f2937;
 }
 
 .page {
   min-height: 100vh;
-  padding: clamp(12px, 2vw, 24px);
+  padding: 12px;
 }
 
 .container {
-  width: min(100%, 1500px);
+  width: 100%;
   margin: 0 auto;
 }
 
 .app-header {
+  width: min(100%, 1500px);
+  margin: 0 auto;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -50,6 +52,157 @@ h1 {
   background: white;
   border-radius: 18px;
   box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12);
+}
+
+.dashboard-wrap {
+  --dashboard-cell-x: 112px;
+  --dashboard-cell-y: 74px;
+  --dashboard-gap-x: 16px;
+  --dashboard-gap-y: 16px;
+  --dashboard-padding-x: 8px;
+  --dashboard-padding-y: 8px;
+  --dashboard-track-x: calc(var(--dashboard-cell-x) + var(--dashboard-gap-x));
+  --dashboard-track-y: calc(var(--dashboard-cell-y) + var(--dashboard-gap-y));
+  --dashboard-grid-line: rgba(65, 98, 145, 0.08);
+  --dashboard-edge-line: rgba(65, 98, 145, 0.035);
+  margin-top: clamp(12px, 2vw, 24px);
+  padding: 10px;
+  border: 1px solid #d4dbe8;
+  border-radius: 14px;
+  background:
+    linear-gradient(
+      var(--dashboard-grid-line) 0 1px,
+      transparent 1px var(--dashboard-cell-y),
+      var(--dashboard-edge-line) var(--dashboard-cell-y) calc(var(--dashboard-cell-y) + 1px),
+      transparent calc(var(--dashboard-cell-y) + 1px)
+    ),
+    linear-gradient(
+      90deg,
+      var(--dashboard-grid-line) 0 1px,
+      transparent 1px var(--dashboard-cell-x),
+      var(--dashboard-edge-line) var(--dashboard-cell-x) calc(var(--dashboard-cell-x) + 1px),
+      transparent calc(var(--dashboard-cell-x) + 1px)
+    ),
+    #f7f9fc;
+  background-origin: content-box;
+  background-position: var(--dashboard-padding-x) var(--dashboard-padding-y);
+  background-size: 100% var(--dashboard-track-y), var(--dashboard-track-x) 100%, auto;
+}
+
+.dashboard-grid {
+  min-height: 100%;
+}
+
+.react-grid-item {
+  transition:
+    transform 180ms ease,
+    width 180ms ease,
+    height 180ms ease;
+}
+
+.react-grid-item.react-draggable-dragging,
+.react-grid-item.resizing {
+  transition: none;
+  z-index: 20;
+}
+
+.react-grid-item.react-grid-placeholder {
+  background: #3b82f6;
+  border: 2px solid #1d4ed8;
+  border-radius: 12px;
+  opacity: 0.18;
+}
+
+.react-grid-item > .react-resizable-handle::after {
+  border-right-color: #64748b;
+  border-bottom-color: #64748b;
+}
+
+.dashboard-panel {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  box-shadow: 0 2px 7px rgba(30, 41, 59, 0.12);
+}
+
+.react-grid-item.react-draggable-dragging .dashboard-panel,
+.react-grid-item.resizing .dashboard-panel {
+  border-color: #2563eb;
+  box-shadow:
+    0 0 0 2px rgba(37, 99, 235, 0.35),
+    0 16px 32px rgba(30, 64, 175, 0.2);
+}
+
+.dashboard-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 12px;
+  border-bottom: 1px solid #dbe3ef;
+  background: linear-gradient(#f8fafc, #eef2f7);
+  color: #334155;
+}
+
+.dashboard-close-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.dashboard-close-button:hover {
+  background: #fee2e2;
+  border-color: #fecaca;
+  color: #dc2626;
+}
+
+.dashboard-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  padding: 4px 0;
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: grab;
+}
+
+.dashboard-drag-handle:active {
+  cursor: grabbing;
+}
+
+.dashboard-drag-handle span {
+  color: #94a3b8;
+  letter-spacing: 1px;
+}
+
+.dashboard-panel-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px;
+}
+
+.dashboard-panel-body .circuit-builder,
+.dashboard-panel-body .phasor-list-controls {
+  margin-top: 0;
 }
 
 .resizable-panel {
@@ -256,6 +409,34 @@ svg {
   display: block;
 }
 
+.phasor-view-surface {
+  min-height: 100%;
+  padding: 8px;
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at center, rgba(37, 99, 235, 0.07) 0 1px, transparent 1px),
+    linear-gradient(#f8fafc, #ffffff);
+  background-size: 24px 24px, auto;
+}
+
+.phasor-view-surface #phasorSvg {
+  width: min(100%, 1100px);
+  max-height: none;
+  margin: 0 auto;
+  background: rgba(255, 255, 255, 0.96);
+  border-color: #cbd5e1;
+}
+
+.phasor-plane-bg {
+  fill: #ffffff;
+}
+
+.phasor-grid-circle,
+.phasor-grid-ray {
+  stroke: #94a3b8;
+  opacity: 0.72;
+}
+
 .sidebar {
   padding: clamp(12px, 1.6vw, 20px);
   max-height: calc(100vh - 48px);
@@ -317,8 +498,7 @@ input[type="checkbox"] {
   position: relative;
 }
 
-.top-dropdown summary {
-  list-style: none;
+.top-menu-trigger {
   cursor: pointer;
   border: 1px solid #cbd5e1;
   border-radius: 10px;
@@ -330,24 +510,20 @@ input[type="checkbox"] {
   user-select: none;
 }
 
-.top-dropdown summary::-webkit-details-marker {
-  display: none;
-}
-
-.top-dropdown summary::after {
+.top-menu-trigger::after {
   content: "v";
   margin-left: 8px;
   font-size: 11px;
   color: #64748b;
 }
 
-.top-dropdown[open] summary {
+.top-dropdown.open .top-menu-trigger {
   background: #0f172a;
   border-color: #0f172a;
   color: white;
 }
 
-.top-dropdown[open] summary::after {
+.top-dropdown.open .top-menu-trigger::after {
   color: white;
 }
 
@@ -368,7 +544,7 @@ input[type="checkbox"] {
 }
 
 .dropdown-panel.wide {
-  width: min(96vw, 820px);
+  width: min(calc(100vw - 32px), 980px);
 }
 
 .scale-controls.compact {
@@ -480,6 +656,34 @@ input[type="checkbox"] {
   display: grid;
   grid-template-columns: 1fr;
   gap: 8px;
+}
+
+.view-window-row.disabled {
+  opacity: 0.58;
+}
+
+.view-menu select {
+  width: 100%;
+  margin-top: 4px;
+  padding: 7px 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.view-menu .full-width-button {
+  margin-top: 10px;
+}
+
+.view-window-row span:first-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.inline-note {
+  margin-top: 0;
+  white-space: nowrap;
 }
 
 .mode-menu .mode-switch {
@@ -974,7 +1178,8 @@ body.notes-view .rect-value {
     flex: 1 1 145px;
   }
 
-  .top-dropdown summary {
+  .top-menu-trigger {
+    width: 100%;
     text-align: center;
   }
 

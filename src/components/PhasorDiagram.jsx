@@ -64,8 +64,9 @@ export default function PhasorDiagram({
 
   return (
     <svg ref={svgRef} id="phasorSvg" viewBox={`0 0 ${SIZE} ${SIZE}`}>
+      <rect x="0" y="0" width={SIZE} height={SIZE} className="phasor-plane-bg" />
       {showGrid && (
-        <>
+        <g className="phasor-polar-grid">
           {Array.from({ length: RADIAL_DIVISIONS }, (_, index) => {
             const r = ((index + 1) * maxMag) / RADIAL_DIVISIONS;
             const labelPoint = toScreen(r, 0, scale);
@@ -76,8 +77,8 @@ export default function PhasorDiagram({
                   cy={CENTER}
                   r={r * scale}
                   fill="none"
-                  stroke="#e5e7eb"
                   strokeWidth="1"
+                  className="phasor-grid-circle"
                 />
                 <text x={labelPoint.sx + 4} y={labelPoint.sy - 4} fontSize="11" fill="#64748b">
                   {r.toFixed(0)}
@@ -98,9 +99,9 @@ export default function PhasorDiagram({
                   y1={CENTER}
                   x2={endScreen.sx}
                   y2={endScreen.sy}
-                  stroke="#e5e7eb"
                   strokeWidth="1"
                   strokeDasharray="5 5"
+                  className="phasor-grid-ray"
                 />
                 <text
                   x={labelScreen.sx}
@@ -115,7 +116,7 @@ export default function PhasorDiagram({
               </g>
             );
           })}
-        </>
+        </g>
       )}
 
       <line x1="0" y1={CENTER} x2={SIZE} y2={CENTER} stroke="#94a3b8" strokeWidth="1.5" />

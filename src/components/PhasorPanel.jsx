@@ -24,16 +24,18 @@ export default function PhasorPanel({
   onCollapseAll,
   onAddPhasor,
   onRemovePhasor,
+  showCircuitBuilder = true,
+  embedded = false,
 }) {
   const calculatedMode = mode === "circuit";
 
   return (
-    <aside className="card sidebar resizable-panel">
+    <aside className={embedded ? "phasor-panel-body" : "card sidebar resizable-panel"}>
       <div className="sidebar-header">
         <h2>Phasors</h2>
       </div>
 
-      {calculatedMode && (
+      {calculatedMode && showCircuitBuilder && (
         <CircuitBuilder
           circuit={circuit}
           solvedCircuit={solvedCircuit}

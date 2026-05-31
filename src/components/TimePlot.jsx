@@ -32,12 +32,19 @@ export default function TimePlot({
   settings,
   colorPickerMode,
   colorPalette,
+  selectedWaveLabel: controlledSelectedWaveLabel,
+  onSelectedWaveLabelChange,
   onSettingsChange,
   onPhasorColorChange,
   onPrevCursorCycle,
   onNextCursorCycle,
+  showHeader = true,
+  showPlot = true,
+  showMeasurements = true,
 }) {
-  const [selectedWaveLabel, setSelectedWaveLabel] = useState("");
+  const [internalSelectedWaveLabel, setInternalSelectedWaveLabel] = useState("");
+  const selectedWaveLabel = controlledSelectedWaveLabel ?? internalSelectedWaveLabel;
+  const setSelectedWaveLabel = onSelectedWaveLabelChange ?? setInternalSelectedWaveLabel;
   const visible = phasors.filter((p) => p.visible && TIME_DOMAIN_SCALE_KEYS.has(p.scaleKey));
   const hiddenWaveLabels = Array.isArray(settings.hiddenWaveLabels) ? settings.hiddenWaveLabels : [];
   const timeVisible = visible.filter((p) => !hiddenWaveLabels.includes(p.label));
@@ -114,6 +121,7 @@ export default function TimePlot({
 
   return (
     <div>
+      {showHeader && (
       <div className="plot-title-row">
         <span>Time-Based View</span>
         <div className="plot-options">
@@ -188,8 +196,9 @@ export default function TimePlot({
           </label>
         </div>
       </div>
+      )}
 
-      {settings.showTimePlot && (
+      {showPlot && settings.showTimePlot && (
         <svg id="timeSvg" viewBox={`0 0 ${WIDTH} ${HEIGHT}`}>
           <defs>
             <clipPath id="time-plot-clip">
@@ -293,16 +302,18 @@ export default function TimePlot({
         </svg>
       )}
 
-      <MeasurementTable
-        measurements={measurements}
-        show={settings.showTimePlot}
-        onToggleWave={toggleWave}
-        onWaveColorChange={onPhasorColorChange}
-        onSelectWave={setSelectedWaveLabel}
-        colorPickerMode={colorPickerMode}
-        colorPalette={colorPalette}
-      />
-      {settings.showTimePlot && (
+      {showMeasurements && (
+        <MeasurementTable
+          measurements={measurements}
+          show={settings.showTimePlot}
+          onToggleWave={toggleWave}
+          onWaveColorChange={onPhasorColorChange}
+          onSelectWave={setSelectedWaveLabel}
+          colorPickerMode={colorPickerMode}
+          colorPalette={colorPalette}
+        />
+      )}
+      {showPlot && settings.showTimePlot && (
         <p className="cursor-note">
           Cursor points are fixed to a meaningful point on each wave. This keeps the view simple:
           compare when each wave crosses zero rising, reaches maximum, or reaches minimum.
